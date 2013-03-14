@@ -1,3 +1,4 @@
+#!/bin/sh
 #
 # Copyright (c) 2012-2013, Johns Hopkins University
 # Copyright (c) 2012-2013, University of Sussex
