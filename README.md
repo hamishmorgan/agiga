@@ -2,7 +2,7 @@
 
 Annotated Gigaword Java API and Command Line Tools
 
-**Note: This project is a fork of an upstream repository at [https://code.google.com/p/agig](https://code.google.com/p/agig)**
+**Note: This project is a fork of an upstream repository at [https://code.google.com/p/agiga](https://code.google.com/p/agiga)**
 
 ---
 
@@ -57,7 +57,7 @@ Obviously you're going to need a account details in your `~//m2/settings.xml` fo
 ### Pulling upstream changes from the SVN repo
 
 When changes are made to the upstream SVN repo 
-(at [https://code.google.com/p/agig](https://code.google.com/p/agig)), 
+(at [https://code.google.com/p/agiga](https://code.google.com/p/agiga)), 
 we can pull and merge them into the local repo. First make sure the remote 
 is in your git config file `.git/config`:
 
