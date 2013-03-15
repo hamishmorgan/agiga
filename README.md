@@ -13,6 +13,14 @@ The project has been forked to implement the following changes:
  * Maven building, integration, and deployment.
 
  * Integration tests to demonstrate the API
+ 
+ * Add Closeable interface to `*Reader` classes.
+
+In addition the following change was planned, but abandoned:
+
+ * Add the production of Standford Core NLP `Annotation` to the readers. This is required for integration with our other projects. It was assumed that this system would have been used to read the Gigaword format, but it turns out that wasn't the case. Consiquently it would have required either a substantial rewrite, or an entirely indepent conversion system. We've no desire to grow the dependencies for this project, so we decided to implement the convertion within the parent project.
+ 
+ * Decoupling of `*Reader` classes from the data source. Currently you can only specify a file path as a string and IO is hard coded internally, which makes it very hard to extend. A substantial re-write would have been required so for the time being I'm just going to ignore that.
 
 ## Tasks
 
