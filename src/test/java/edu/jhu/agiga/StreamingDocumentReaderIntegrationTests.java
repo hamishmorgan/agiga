@@ -1,17 +1,19 @@
 package edu.jhu.agiga;
 
+import com.google.common.base.Throwables;
+import com.google.common.io.Closer;
 import org.apache.log4j.*;
 import org.junit.*;
 import org.junit.rules.TestName;
 
+import java.io.IOException;
+
 import static java.text.MessageFormat.format;
 
 /**
- * Created with IntelliJ IDEA.
- * User: hiam20
- * Date: 14/03/2013
- * Time: 16:18
- * To change this template use File | Settings | File Templates.
+ * A collection of integration tests that double as API usage demonstrations.
+ *
+ * @author Hamish Morgan &lt;hamish.morgan@sussex.ac.uk&gt;
  */
 public class StreamingDocumentReaderIntegrationTests {
 
@@ -50,36 +52,71 @@ public class StreamingDocumentReaderIntegrationTests {
 
     /**
      * Read the surface text from the documents.
-     *
+     * <p/>
      * Note that it's not possible to perfectly reconstruct the plain text documents, in particular the white-space
      * is entirely lost. Consequently, we end up will rather silly spacing such as a space on both sides of a comma.
      */
     @Test
-    public void testGetText() {
+    public void testGetText() throws IOException {
+
+        final Closer closer = Closer.create();
+
+        try {
+            final AgigaPrefs prefs = new AgigaPrefs();
+            final StreamingDocumentReader instance =
+                    closer.register(new StreamingDocumentReader(TEST_FILE_PATH, prefs));
+
+            int documentCount = 0;
+            for (final AgigaDocument doc : instance) {
+                ++documentCount;
+
+                LOG.debug(format("Reading document {2}; id={0}, type={1}",
+                        doc.getDocId(), doc.getType(), documentCount));
+
+                final StringBuilder sentBuilder = new StringBuilder();
+                for (AgigaSentence sent : doc.getSents()) {
+
+                    for (AgigaToken tok : sent.getTokens()) {
+                        sentBuilder.append(tok.getWord());
+                        sentBuilder.append(' ');
+                    }
+                    sentBuilder.append('\n');
+                }
+                System.out.println(sentBuilder.toString());
+
+            }
+            LOG.info("Number of docs: " + instance.getNumDocs());
+        } catch (Throwable e) {
+            throw closer.rethrow(e);
+        } finally {
+            closer.close();
+        }
+    }
+
+
+    /**
+     * Test the new Closeable interface on the *Reader classes.
+     */
+    @Test
+    public void testCloseable() throws IOException {
 
         final AgigaPrefs prefs = new AgigaPrefs();
         final StreamingDocumentReader instance = new StreamingDocumentReader(TEST_FILE_PATH, prefs);
 
-        int documentCount = 0;
-        for (final AgigaDocument doc : instance) {
-            ++documentCount;
+        Assert.assertTrue("Instance does not have a first item.", instance.hasNext());
 
-            LOG.debug(format("Reading document {2}; id={0}, type={1}",
-                    doc.getDocId(), doc.getType(), documentCount));
+        instance.close();
 
-            final StringBuilder sentBuilder = new StringBuilder();
-            for (AgigaSentence sent : doc.getSents()) {
-
-                for (AgigaToken tok : sent.getTokens()) {
-                    sentBuilder.append(tok.getWord());
-                    sentBuilder.append(' ');
-                }
-                sentBuilder.append('\n');
-            }
-            System.out.println(sentBuilder.toString());
-
+        try {
+            instance.hasNext();
+            Assert.fail("hasNext should have thrown an exception.");
+        } catch (RuntimeException ex) {
+            // We are expecting an IOException (stream closed) wrapped in a RuntimeException so it matches the
+            // iterator signature. It would be nicer if hasNext() just returned false, but that would require
+            // a more substantial rewrite.
+            if (!Throwables.getRootCause(ex).getClass().equals(IOException.class))
+                Assert.fail("Expecting IOException as root cause, but found " + Throwables.getRootCause(ex).getClass());
         }
-        LOG.info("Number of docs: " + instance.getNumDocs());
     }
 
 

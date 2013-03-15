@@ -22,11 +22,7 @@ package edu.jhu.agiga;
 
 import static edu.jhu.agiga.AgigaSentenceReader.require;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.util.Iterator;
 import java.util.zip.GZIPInputStream;
 
@@ -41,15 +37,15 @@ import com.ximpleware.VTDNav;
  * large Annotated Gigaword files by extracting snippets of XML containing only
  * a single document and passing that XML to an appropriate object iterator such
  * as AgigaDocumentReader or AgigaSentenceReader.
- * 
+ *
  * This implementation using VTD-XML should handle XML files up to 2GB in size.
  * For larger files, we can switch to extended VTD-XML as described here:
  * <url>http://vtd-xml.sourceforge.net/codeSample/cs12.html</url>
- * 
+ *
  * @author mgormley
- * 
+ *
  */
-public abstract class StreamingVtdXmlReader<T> implements Iterable<T>, Iterator<T> {
+public abstract class StreamingVtdXmlReader<T> implements Iterable<T>, Iterator<T>, Closeable {
 
     private static Logger log = Logger.getLogger(StreamingVtdXmlReader.class);
 
@@ -59,7 +55,7 @@ public abstract class StreamingVtdXmlReader<T> implements Iterable<T>, Iterator<
     private int numDocs;
     private BufferedReader reader;
     private Iterator<T> vtdReader;
-        
+
     public StreamingVtdXmlReader(String inputFile) {
         try {
             InputStream inputStream = new FileInputStream(inputFile);
@@ -82,7 +78,7 @@ public abstract class StreamingVtdXmlReader<T> implements Iterable<T>, Iterator<
         String str = reader.readLine();
         str += "</FILE>";
         reader.reset();
-        
+
         byte[] b = str.getBytes("UTF-8");
         VTDGen vg = new VTDGen();
         vg.setDoc(b);
@@ -90,13 +86,13 @@ public abstract class StreamingVtdXmlReader<T> implements Iterable<T>, Iterator<
         VTDNav vn = vg.getNav();
         require(vn.toElement(VTDNav.ROOT));
         String fileId = vn.toString(vn.getAttrVal(AgigaConstants.FILE_ID));
-        
+
         return fileId;
     }
 
     private boolean nextDoc() {
         try {
-    
+
         StringBuilder sb = new StringBuilder();
         String line;
         boolean isBuilding = false;
@@ -131,7 +127,7 @@ public abstract class StreamingVtdXmlReader<T> implements Iterable<T>, Iterator<
         }
     }
 
-    protected abstract Iterator<T> getIteratorInstance(byte[] b); 
+    protected abstract Iterator<T> getIteratorInstance(byte[] b);
 
     protected abstract int getNumSents(T item);
 
@@ -139,7 +135,7 @@ public abstract class StreamingVtdXmlReader<T> implements Iterable<T>, Iterator<
     public Iterator<T> iterator() {
         return this;
     }
-    
+
     @Override
     public boolean hasNext() {
         while (vtdReader == null || !vtdReader.hasNext()) {
@@ -162,7 +158,7 @@ public abstract class StreamingVtdXmlReader<T> implements Iterable<T>, Iterator<
 
     @Override
     public void remove() {
-        throw new RuntimeException("not implemented");        
+        throw new RuntimeException("not implemented");
     }
 
     public int getNumDocs() {
@@ -172,9 +168,16 @@ public abstract class StreamingVtdXmlReader<T> implements Iterable<T>, Iterator<
     public int getNumSents() {
         return numSents;
     }
-    
+
     public String getFileId() {
         return fileId;
     }
-    
+
+    @Override
+    public void close() throws IOException {
+        if(reader != null) {
+            vtdReader = null;
+            reader.close();
+        }
+    }
 }
