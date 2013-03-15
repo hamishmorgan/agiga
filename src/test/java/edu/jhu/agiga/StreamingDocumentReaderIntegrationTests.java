@@ -1,0 +1,86 @@
+package edu.jhu.agiga;
+
+import org.apache.log4j.*;
+import org.junit.*;
+import org.junit.rules.TestName;
+
+import static java.text.MessageFormat.format;
+
+/**
+ * Created with IntelliJ IDEA.
+ * User: hiam20
+ * Date: 14/03/2013
+ * Time: 16:18
+ * To change this template use File | Settings | File Templates.
+ */
+public class StreamingDocumentReaderIntegrationTests {
+
+    private static final Logger LOG = Logger.getLogger(StreamingDocumentReaderIntegrationTests.class);
+    private static final String TEST_FILE_PATH = "src/test/resources/edu/jhu/agiga/nyt_eng_201012_sample.xml.gz";
+
+    @Rule()
+    public final TestName testName = new TestName();
+
+    @BeforeClass
+    public static void configureLogger() {
+        final ConsoleAppender cAppender = new ConsoleAppender(new PatternLayout("%d{HH:mm:ss,SSS} [%t] %p %c %x - %m%n"));
+        BasicConfigurator.configure(cAppender);
+        Logger.getRootLogger().setLevel(Level.DEBUG);
+    }
+
+    @AfterClass
+    public static void tearDownClass() {
+    }
+
+    @Before()
+    public final void printTestMethod() throws SecurityException, NoSuchMethodException {
+        LOG.info(format(
+                "Running test: {0}#{1}",
+                this.getClass().getName(), testName.getMethodName()));
+    }
+
+
+    @Before
+    public void setUp() {
+    }
+
+    @After
+    public void tearDown() {
+    }
+
+    /**
+     * Read the surface text from the documents.
+     *
+     * Note that it's not possible to perfectly reconstruct the plain text documents, in particular the white-space
+     * is entirely lost. Consequently, we end up will rather silly spacing such as a space on both sides of a comma.
+     */
+    @Test
+    public void testGetText() {
+
+        final AgigaPrefs prefs = new AgigaPrefs();
+        final StreamingDocumentReader instance = new StreamingDocumentReader(TEST_FILE_PATH, prefs);
+
+        int documentCount = 0;
+        for (final AgigaDocument doc : instance) {
+            ++documentCount;
+
+            LOG.debug(format("Reading document {2}; id={0}, type={1}",
+                    doc.getDocId(), doc.getType(), documentCount));
+
+            final StringBuilder sentBuilder = new StringBuilder();
+            for (AgigaSentence sent : doc.getSents()) {
+
+                for (AgigaToken tok : sent.getTokens()) {
+                    sentBuilder.append(tok.getWord());
+                    sentBuilder.append(' ');
+                }
+                sentBuilder.append('\n');
+            }
+            System.out.println(sentBuilder.toString());
+
+        }
+        LOG.info("Number of docs: " + instance.getNumDocs());
+    }
+
+
+}
