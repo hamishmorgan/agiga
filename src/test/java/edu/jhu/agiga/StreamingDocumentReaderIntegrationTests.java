@@ -27,6 +27,7 @@ import org.junit.*;
 import org.junit.rules.TestName;
 
 import java.io.IOException;
+import java.util.List;
 
 import static java.text.MessageFormat.format;
 
@@ -113,6 +114,44 @@ public class StreamingDocumentReaderIntegrationTests {
         }
     }
 
+    @Test
+    public void testGetGramRels() throws IOException {
+        final Closer closer = Closer.create();
+
+        try {
+            final AgigaPrefs prefs = new AgigaPrefs();
+            final StreamingDocumentReader instance =
+                    closer.register(new StreamingDocumentReader(TEST_FILE_PATH, prefs));
+
+            int documentCount = 0;
+            for (final AgigaDocument doc : instance) {
+                ++documentCount;
+
+                LOG.debug(format("Reading document {2}; id={0}, type={1}",
+                        doc.getDocId(), doc.getType(), documentCount));
+
+                final StringBuilder sentBuilder = new StringBuilder();
+                for (AgigaSentence sent : doc.getSents()) {
+                    final List<AgigaToken> tokens = sent.getTokens();
+
+                    for(AgigaTypedDependency rel : sent.getColCcprocDeps()) {
+                        final int depIdx = rel.getDepIdx();
+                        final int govIdx = rel.getGovIdx();
+                        final String type = rel.getType();
+                        final String dep = tokens.get(depIdx).getWord();
+                        final String gov = govIdx == -1 ? "<NIL>" : tokens.get(govIdx).getWord();
+
+                        System.out.printf("%s %s:%s%n", gov,type, dep);
+                    }
+                }
+            }
+            LOG.info("Number of docs: " + instance.getNumDocs());
+        } catch (Throwable e) {
+            throw closer.rethrow(e);
+        } finally {
+            closer.close();
+        }
+    }
 
     /**
      * Test the new Closeable interface on the *Reader classes.
